@@ -33,10 +33,6 @@ class BotCoin():
         self.tot_evl_price = 0
         self.buy_max_price = 0
 
-        self.curncy = 'USDT'
-        self.fltcnc = '/USDT'
-        self.basems = '30m'
-
     
     def init_per_day(self):
 
