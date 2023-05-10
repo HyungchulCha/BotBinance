@@ -56,7 +56,7 @@ class BotCoin():
         _ttl_evl_prc, _buy_max_lmt = self.get_total_price()
         self.tot_evl_price = _ttl_evl_prc if _ttl_evl_prc < 300000 else 300000
         self.buy_max_lmt = _buy_max_lmt if _ttl_evl_prc < 300000 else _buy_max_lmt - 300000
-        _buy_max_prc = self.tot_evl_price / 120
+        _buy_max_prc = self.tot_evl_price / 80
         self.buy_max_price = _buy_max_prc if _buy_max_prc > 10 else 10
 
         line_message(f'BotBinance \n평가금액 : {self.tot_evl_price} USDT \n상위종목 : {self.q_l}')
