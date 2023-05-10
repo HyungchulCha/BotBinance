@@ -164,7 +164,7 @@ class BotCoin():
         i = 1
         for symbol in self.b_l:
 
-            print(symbol)
+            print(bal_lst)
 
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
