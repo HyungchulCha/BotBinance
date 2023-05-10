@@ -88,7 +88,7 @@ class BotCoin():
             i = self.pb.fetch_ticker(s)
             if float(i['change']) > 0:
                 _arr.append({'s': s, 'v': i['bidVolume']})
-        arr = sorted(_arr, key=lambda x: x['v'])[-60:]
+        arr = sorted(_arr, key=lambda x: x['v'])[-80:]
         
         return [s['s'] for s in arr]
     
@@ -107,6 +107,7 @@ class BotCoin():
 
     def gen_bnc_df(self, tk, timeframe, limit):
         ohlcv = self.pb.fetch_ohlcv(tk, timeframe=timeframe, limit=limit)
+        print(len(ohlcv))
         df = pd.DataFrame(ohlcv, columns=['datetime', 'open', 'high', 'low', 'close', 'volume'])
         pd_ts = pd.to_datetime(df['datetime'], utc=True, unit='ms')
         pd_ts = pd_ts.dt.tz_convert("Asia/Seoul")
@@ -192,6 +193,7 @@ class BotCoin():
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
+                        
                         self.pb.create_market_buy_order(symbol=symbol, amount=cur_bal)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
@@ -299,9 +301,9 @@ class BotCoin():
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
-            # if i % 8 == 0:
-            #     time.sleep(0.4)
-            # i = i + 1
+            if i % 10 == 0:
+                time.sleep(0.4)
+            i = i + 1
 
         save_file(FILE_URL_BLNC_3M, obj_lst)
 
