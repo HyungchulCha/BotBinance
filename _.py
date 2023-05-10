@@ -85,13 +85,17 @@ bnc = ccxt.binance(config={'apiKey': apikey, 'secret': secret, 'enableRateLimit'
 # cancel = bnc.cancel_all_orders()
 
 def get_total_price():
-    total = bnc.fetch_balance()['total']
-    price = 0
-    for t in total:
-        if total[t] > 0:
-            price = price + total[t]
-            
-    return price
+    res = bnc.fetch_balance()
+    res_ttl = res['total']
+    res_bal = res['info']['balances']
+    price_fre = res['USDT']['free']
+    price_ttl = 0
+    for rb in res_bal:
+        if float(rb['free']) > 0 and rb['asset'] != 'USDT':
+            current_price = bnc.fetch_ticker(rb['asset'] + '/USDT')['close']
+            price_ttl = price_ttl + current_price * res_ttl[rb['asset']]
+    price_ttl = price_ttl + price_fre
+    return float(price_ttl), float(price_fre)
 
 def get_rank_symbols():
     _symbols = bnc.fetch_tickers().keys()
@@ -99,7 +103,7 @@ def get_rank_symbols():
     _arr = []
     for s in symbols:
         i = bnc.fetch_ticker(s)
-        if float(i['change']) > 0:
+        if i['open'] != None and float(i['change']) > 0:
             _arr.append({'s': s, 'v': i['bidVolume']})
     arr = sorted(_arr, key=lambda x: x['v'])[-60:]
     
@@ -116,9 +120,10 @@ def get_balance_code_list(obj=False):
             }
     return o if obj else l
 
-# print(get_total_price())
-print(get_rank_symbols())
-# print(get_balance_code_list())
+print(get_total_price())
+# print(bnc.fetch_ticker('SNT/USDT'))
+# print(get_rank_symbols())
+print(get_balance_code_list())
 # print(get_balance_code_list(True))
 # res = bnc.fetch_open_orders('SUI/USDT')
 # for r in res:
@@ -128,3 +133,10 @@ print(get_rank_symbols())
 #     resp = bnc.cancel_order(r['info']['orderId'], 'SUI/USDT')
 #     print(resp['info']['status'] == 'CANCELD')
 # print(bnc.fetch_closed_orders('SUI/USDT'))
+# ADADOWN/USDT
+arr = []
+bl = bnc.fetch_balance()['info']['balances']
+for b in bl:
+    arr.append(b['asset'])
+
+# print(arr)

@@ -14,7 +14,7 @@ class BotCoin():
 
     def __init__(self):
 
-        self.is_aws = True
+        self.is_aws = False
         self.access_key = BN_ACCESS_KEY_AWS if self.is_aws else BN_ACCESS_KEY_NAJU
         self.secret_key = BN_SECRET_KEY_AWS if self.is_aws else BN_SECRET_KEY_NAJU
         self.pb = ccxt.binance(config={'apiKey': self.access_key, 'secret': self.secret_key, 'enableRateLimit': True})
@@ -40,7 +40,7 @@ class BotCoin():
 
             tn = datetime.datetime.now()
             tn_div = tn.minute % 30
-            time.sleep(1800 - (60 * tn_div) - tn.second - 90)
+            # time.sleep(1800 - (60 * tn_div) - tn.second - 90)
             self.bool_balance = True
 
         _tn = datetime.datetime.now()
@@ -56,10 +56,10 @@ class BotCoin():
         _ttl_evl_prc, _buy_max_lmt = self.get_total_price()
         self.tot_evl_price = _ttl_evl_prc if _ttl_evl_prc < 300000 else 300000
         self.buy_max_lmt = _buy_max_lmt if _ttl_evl_prc < 300000 else _buy_max_lmt - 300000
-        _buy_max_prc = self.tot_evl_price / 80
+        _buy_max_prc = self.tot_evl_price / 120
         self.buy_max_price = _buy_max_prc if _buy_max_prc > 10 else 10
 
-        line_message(f'BotBinance \n평가금액 : {self.tot_evl_price} USDT \n상위종목 : {self.q_l}')
+        line_message(f'BotBinance \n평가금액 : {self.tot_evl_price} USDT')
 
         __tn = datetime.datetime.now()
         tn_diff = (__tn - _tn).seconds
@@ -70,14 +70,17 @@ class BotCoin():
     
     def get_total_price(self):
         res = self.pb.fetch_balance()
-        total = res['total']
-        price_free = res['USDT']['free']
-        price_total = 0
-        for t in total:
-            if total[t] > 0:
-                price_total = price_total + total[t]
-                
-        return float(price_total), float(price_free)
+        res_ttl = res['total']
+        res_bal = res['info']['balances']
+        price_fre = res['USDT']['free']
+        price_ttl = 0
+        for rb in res_bal:
+            if float(rb['free']) > 0 and rb['asset'] != 'USDT':
+                current_price = self.pb.fetch_ticker(rb['asset'] + '/USDT')['close']
+                price_ttl = price_ttl + current_price * res_ttl[rb['asset']]
+        price_ttl = price_ttl + price_fre
+
+        return float(price_ttl), float(price_fre)
     
 
     def get_rank_symbols(self):
@@ -86,9 +89,9 @@ class BotCoin():
         _arr = []
         for s in symbols:
             i = self.pb.fetch_ticker(s)
-            if float(i['change']) > 0:
+            if i['open'] != None and float(i['change']) > 0:
                 _arr.append({'s': s, 'v': i['bidVolume']})
-        arr = sorted(_arr, key=lambda x: x['v'])[-80:]
+        arr = sorted(_arr, key=lambda x: x['v'])[-60:]
         
         return [s['s'] for s in arr]
     
@@ -106,9 +109,7 @@ class BotCoin():
     
 
     def gen_bnc_df(self, tk, timeframe, limit):
-
         ohlcv = self.pb.fetch_ohlcv(tk, timeframe=timeframe, limit=limit)
-
         if len(ohlcv) >= 80:
             df = pd.DataFrame(ohlcv, columns=['datetime', 'open', 'high', 'low', 'close', 'volume'])
             pd_ts = pd.to_datetime(df['datetime'], utc=True, unit='ms')
@@ -116,7 +117,6 @@ class BotCoin():
             pd_ts = pd_ts.dt.tz_localize(None)
             df.set_index(pd_ts, inplace=True)
             df = df[['open', 'high', 'low', 'close', 'volume']]
-
             return df
     
 
@@ -138,7 +138,7 @@ class BotCoin():
 
             tn = datetime.datetime.now()
             tn_div = tn.minute % 30
-            time.sleep(1800 - (60 * tn_div) - tn.second)
+            # time.sleep(1800 - (60 * tn_div) - tn.second)
             self.bool_order = True
 
         _tn = datetime.datetime.now()
@@ -158,6 +158,8 @@ class BotCoin():
 
         i = 1
         for symbol in self.b_l:
+
+            print(symbol)
 
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
@@ -197,8 +199,9 @@ class BotCoin():
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
                         
-                        res = self.pb.create_market_buy_order(symbol=symbol, amount=cur_bal)
-                        
+                        self.pb.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                        # res = self.pb.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': False})
+                        # print(res)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                         sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})                    
@@ -250,6 +253,8 @@ class BotCoin():
                                     bool_01_end = True
 
                                 self.pb.create_market_sell_order(symbol=symbol, amount=qty)
+                                # res = self.pb.create_order(symbol, 'market', 'sell', qty, None, {'test': False})
+                                # print(res)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S1] ' + symbol, 'r': round(_ror, 4)})
@@ -269,6 +274,8 @@ class BotCoin():
                                     bool_02_end = True
 
                                 self.pb.create_market_sell_order(symbol=symbol, amount=qty)
+                                # res = self.pb.create_order(symbol, 'market', 'sell', qty, None, {'test': False})
+                                # print(res)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S2] ' + symbol, 'r': round(_ror, 4)})
@@ -281,6 +288,8 @@ class BotCoin():
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
                                 self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
+                                # res = self.pb.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': False})
+                                # print(res)
                                 _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
@@ -292,6 +301,8 @@ class BotCoin():
                         elif (hp <= bal_pft) and psb_ord_00:
 
                             self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
+                            # res = self.pb.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': False})
+                            # print(res)
                             _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
@@ -300,12 +311,14 @@ class BotCoin():
                         elif (bal_pft <= ct) and psb_ord_00:
 
                             self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
+                            # res = self.pb.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': False})
+                            # print(res)
                             _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
-            if i % 10 == 0:
+            if i % 8 == 0:
                 time.sleep(0.4)
             i = i + 1
 
@@ -325,23 +338,23 @@ class BotCoin():
 if __name__ == '__main__':
 
     bc = BotCoin()
-    # bc.init_per_day()
-    # bc.stock_order()
+    bc.init_per_day()
+    bc.stock_order()
 
-    while True:
+    # while True:
 
-        try:
+    #     try:
 
-            tn = datetime.datetime.now()
-            tn_085825 = tn.replace(hour=9, minute=14, second=30)
+    #         tn = datetime.datetime.now()
+    #         tn_085825 = tn.replace(hour=9, minute=14, second=30)
 
-            if tn >= tn_085825 and bc.bool_start == False:
-                bc.init_per_day()
-                bc.stock_order()
-                bc.bool_start = True
+    #         if tn >= tn_085825 and bc.bool_start == False:
+    #             bc.init_per_day()
+    #             bc.stock_order()
+    #             bc.bool_start = True
 
-        except Exception as e:
+    #     except Exception as e:
 
-            line_message(f"BotBinance Error : {e}")
-            break
+    #         line_message(f"BotBinance Error : {e}")
+    #         break
 
