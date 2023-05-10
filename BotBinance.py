@@ -192,7 +192,7 @@ class BotCoin():
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
-                        self.pb.create_market_buy_order(symbol, cur_bal)
+                        self.pb.create_market_buy_order(symbol=symbol, amount=cur_bal)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                         sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})                    
@@ -243,7 +243,7 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_01_end = True
 
-                                self.pb.create_market_sell_order(symbol, qty)
+                                self.pb.create_market_sell_order(symbol=symbol, amount=qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S1] ' + symbol, 'r': round(_ror, 4)})
@@ -262,7 +262,7 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_02_end = True
 
-                                self.pb.create_market_sell_order(symbol, qty)
+                                self.pb.create_market_sell_order(symbol=symbol, amount=qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S2] ' + symbol, 'r': round(_ror, 4)})
@@ -274,7 +274,7 @@ class BotCoin():
 
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
-                                self.pb.create_market_sell_order(symbol, bal_qty)
+                                self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
                                 _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
@@ -285,7 +285,7 @@ class BotCoin():
 
                         elif (hp <= bal_pft) and psb_ord_00:
 
-                            self.pb.create_market_sell_order(symbol, bal_qty)
+                            self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
                             _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
@@ -293,7 +293,7 @@ class BotCoin():
 
                         elif (bal_pft <= ct) and psb_ord_00:
 
-                            self.pb.create_market_sell_order(symbol, bal_qty)
+                            self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
                             _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
