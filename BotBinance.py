@@ -179,7 +179,7 @@ class BotCoin():
                 m60_val = df_head['ma60'].iloc[-1]
 
                 cur_prc = float(cls_val)
-                cur_bal = round((self.buy_max_price / cur_prc), 4)
+                cur_bal = self.buy_max_price / cur_prc
 
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
