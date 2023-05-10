@@ -40,7 +40,7 @@ class BotCoin():
 
             tn = datetime.datetime.now()
             tn_div = tn.minute % 30
-            time.sleep(1800 - (60 * tn_div) - tn.second - 90)
+            # time.sleep(1800 - (60 * tn_div) - tn.second - 90)
             self.bool_balance = True
 
         _tn = datetime.datetime.now()
@@ -56,7 +56,8 @@ class BotCoin():
         _ttl_evl_prc, _buy_max_lmt = self.get_total_price()
         self.tot_evl_price = _ttl_evl_prc if _ttl_evl_prc < 300000 else 300000
         self.buy_max_lmt = _buy_max_lmt if _ttl_evl_prc < 300000 else _buy_max_lmt - 300000
-        _buy_max_prc = self.tot_evl_price / len(self.q_l)
+        # _buy_max_prc = self.tot_evl_price / len(self.q_l)
+        _buy_max_prc = self.tot_evl_price / 120
         self.buy_max_price = _buy_max_prc if _buy_max_prc > 10 else 10
 
         line_message(f'BotBinance \n평가금액 : {self.tot_evl_price} USDT')
@@ -142,14 +143,14 @@ class BotCoin():
 
             tn = datetime.datetime.now()
             tn_div = tn.minute % 30
-            time.sleep(1800 - (60 * tn_div) - tn.second)
+            # time.sleep(1800 - (60 * tn_div) - tn.second)
             self.bool_order = True
 
         _tn = datetime.datetime.now()
 
         print('##################################################')
 
-        self.get_remain_cancel(self.b_l)
+        # self.get_remain_cancel(self.b_l)
 
         bal_lst = self.get_balance_code_list(True)
         sel_lst = []
@@ -342,23 +343,23 @@ class BotCoin():
 if __name__ == '__main__':
 
     bc = BotCoin()
-    # bc.init_per_day()
-    # bc.stock_order()
+    bc.init_per_day()
+    bc.stock_order()
 
-    while True:
+    # while True:
 
-        try:
+    #     try:
 
-            tn = datetime.datetime.now()
-            tn_085825 = tn.replace(hour=9, minute=14, second=30)
+    #         tn = datetime.datetime.now()
+    #         tn_085825 = tn.replace(hour=9, minute=14, second=30)
 
-            if tn >= tn_085825 and bc.bool_start == False:
-                bc.init_per_day()
-                bc.stock_order()
-                bc.bool_start = True
+    #         if tn >= tn_085825 and bc.bool_start == False:
+    #             bc.init_per_day()
+    #             bc.stock_order()
+    #             bc.bool_start = True
 
-        except Exception as e:
+    #     except Exception as e:
 
-            line_message(f"BotBinance Error : {e}")
-            break
+    #         line_message(f"BotBinance Error : {e}")
+    #         break
 
