@@ -106,15 +106,18 @@ class BotCoin():
     
 
     def gen_bnc_df(self, tk, timeframe, limit):
+
         ohlcv = self.pb.fetch_ohlcv(tk, timeframe=timeframe, limit=limit)
-        print(len(ohlcv))
-        df = pd.DataFrame(ohlcv, columns=['datetime', 'open', 'high', 'low', 'close', 'volume'])
-        pd_ts = pd.to_datetime(df['datetime'], utc=True, unit='ms')
-        pd_ts = pd_ts.dt.tz_convert("Asia/Seoul")
-        pd_ts = pd_ts.dt.tz_localize(None)
-        df.set_index(pd_ts, inplace=True)
-        df = df[['open', 'high', 'low', 'close', 'volume']]
-        return df
+
+        if len(ohlcv) >= 80:
+            df = pd.DataFrame(ohlcv, columns=['datetime', 'open', 'high', 'low', 'close', 'volume'])
+            pd_ts = pd.to_datetime(df['datetime'], utc=True, unit='ms')
+            pd_ts = pd_ts.dt.tz_convert("Asia/Seoul")
+            pd_ts = pd_ts.dt.tz_localize(None)
+            df.set_index(pd_ts, inplace=True)
+            df = df[['open', 'high', 'low', 'close', 'volume']]
+            
+            return df
     
 
     def get_remain_cancel(self, l):
