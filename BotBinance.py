@@ -116,7 +116,7 @@ class BotCoin():
             pd_ts = pd_ts.dt.tz_localize(None)
             df.set_index(pd_ts, inplace=True)
             df = df[['open', 'high', 'low', 'close', 'volume']]
-            
+
             return df
     
 
@@ -197,7 +197,8 @@ class BotCoin():
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
                         
-                        self.pb.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                        res = self.pb.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                        
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                         sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})                    
