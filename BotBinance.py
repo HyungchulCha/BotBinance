@@ -107,7 +107,7 @@ class BotCoin():
         l = [b['asset'] + '/USDT' for b in bal_lst if ((b['asset'] != 'USDT') and (float(b['free']) > 0))]
         for b in bal_lst:
             if float(b['free']) > 0:
-                o[b['asset']] = {
+                o[b['asset'] + '/USDT'] = {
                     'b': float(b['free']),
                 }
         return o if obj else l
@@ -153,6 +153,7 @@ class BotCoin():
         # self.get_remain_cancel(self.b_l)
 
         bal_lst = self.get_balance_code_list(True)
+        print(bal_lst)
         sel_lst = []
 
         if os.path.isfile(FILE_URL_BLNC_3M):
@@ -163,8 +164,6 @@ class BotCoin():
 
         i = 1
         for symbol in self.b_l:
-
-            print(bal_lst)
 
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
