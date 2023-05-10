@@ -40,7 +40,7 @@ class BotCoin():
 
             tn = datetime.datetime.now()
             tn_div = tn.minute % 30
-            time.sleep(1800 - (60 * tn_div) - tn.second - 600)
+            time.sleep(1800 - (60 * tn_div) - tn.second - 900)
             self.bool_balance = True
 
         _tn = datetime.datetime.now()
