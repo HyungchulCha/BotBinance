@@ -152,61 +152,6 @@ class BotCoin():
                 for rmn in rmn_lst:
                     if rmn['info']['status'] == 'NEW':
                         self.bnc.cancel_order(rmn['info']['orderId'], _l)
-        
-
-
-
-
-
-
-
-
-
-
-
-    
-    # def get_total_price(self):
-    #     res = self.bnc.fetch_balance()
-    #     res_ttl = res['total']
-    #     res_bal = res['info']['balances']
-    #     price_fre = res['USDT']['free']
-    #     price_ttl = 0
-    #     for rb in res_bal:
-    #         if float(rb['free']) > 0 and rb['asset'] != 'USDT':
-    #             current_price = self.bnc.fetch_ticker(rb['asset'] + '/USDT')['close']
-    #             price_ttl = price_ttl + current_price * res_ttl[rb['asset']]
-    #     price_ttl = price_ttl + price_fre
-
-    #     return float(price_ttl), float(price_fre)
-    
-
-    # def get_rank_symbols(self):
-    #     mks = self.bnc.load_markets()
-    #     symbols = []
-    #     for mk in mks:
-    #         if \
-    #         mk.endswith('/USDT') and \
-    #         mks[mk]['info']['status'] == 'TRADING' and \
-    #         mks[mk]['info']['isMarginTradingAllowed'] == False and \
-    #         mks[mk]['info']['isSpotTradingAllowed'] == True and \
-    #         'SPOT' in mks[mk]['info']['permissions'] and \
-    #         not ('MARGIN' in mks[mk]['info']['permissions']) \
-    #         :
-    #             symbols.append(mk)
-
-    #     return symbols
-    
-
-    # def get_balance_code_list(self, obj=False):
-    #     bal_lst = self.bnc.fetch_balance()['info']['balances']
-    #     o = {}
-    #     l = [b['asset'] + '/USDT' for b in bal_lst if ((b['asset'] != 'USDT') and (float(b['free']) > 0))]
-    #     for b in bal_lst:
-    #         if float(b['free']) > 0:
-    #             o[b['asset'] + '/USDT'] = {
-    #                 'b': float(b['free']),
-    #             }
-    #     return o if obj else l
 
 
     def stock_order(self):
