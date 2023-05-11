@@ -210,8 +210,6 @@ class BotCoin():
 
                 if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
-                    print(symbol)
-
                     if \
                     (1.1 < hgt_val < 15) and \
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
@@ -365,7 +363,7 @@ if __name__ == '__main__':
         try:
 
             tn = datetime.datetime.now()
-            tn_start = tn.replace(hour=9, minute=14, second=30)
+            tn_start = tn.replace(hour=8, minute=14, second=30)
 
             if tn >= tn_start and bc.bool_start == False:
                 bc.init_per_day()
