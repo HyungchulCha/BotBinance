@@ -210,6 +210,8 @@ class BotCoin():
 
                 if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
+                    print(symbol)
+
                     if \
                     (1.1 < hgt_val < 15) and \
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
