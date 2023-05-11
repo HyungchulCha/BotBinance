@@ -150,7 +150,7 @@ class BotCoin():
             print(rmn_lst)
             if len(rmn_lst) > 0:
                 for rmn in rmn_lst:
-                    if rmn['info']['status'] == 'NEW':
+                    if rmn['status'] == 'open':
                         self.bnc.cancel_order(rmn['info']['orderId'], _l)
 
 
@@ -216,7 +216,8 @@ class BotCoin():
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
                         
-                        self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                        resp = self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                        print(resp)
                         # res = self.bnc.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': True})
                         # print(res)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
@@ -269,7 +270,8 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_01_end = True
 
-                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
+                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
+                                print(resp)
                                 # res = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(res)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
