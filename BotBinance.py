@@ -15,13 +15,12 @@ class BotCoin():
 
     def __init__(self):
 
-        self.is_aws = False
+        self.is_aws = True
         self.access_key = BN_ACCESS_KEY_AWS if self.is_aws else BN_ACCESS_KEY_NAJU
         self.secret_key = BN_SECRET_KEY_AWS if self.is_aws else BN_SECRET_KEY_NAJU
-        self.pb = ccxt.binance(config={'apiKey': self.access_key, 'secret': self.secret_key, 'enableRateLimit': True})
+        self.bnc = ccxt.binance(config={'apiKey': self.access_key, 'secret': self.secret_key, 'enableRateLimit': True})
         
         self.q_l = []
-        self.r_l = []
         self.b_l = []
 
         self.time_order = None
@@ -31,8 +30,12 @@ class BotCoin():
         self.bool_balance = False
         self.bool_order = False
         
-        self.tot_evl_price = 0
-        self.buy_max_price = 0
+        self.prc_ttl = 0
+        self.prc_lmt = 0
+        self.prc_max = 0
+
+        self.const_up = 300000
+        self.const_dn = 10
 
     
     def init_per_day(self):
@@ -45,96 +48,165 @@ class BotCoin():
             self.bool_balance = True
 
         _tn = datetime.datetime.now()
-        _tn_micro = _tn.microsecond / 1000000
+        _tn_ms = _tn.microsecond / 1000000
 
-        self.pb = ccxt.binance(config={'apiKey': self.access_key, 'secret': self.secret_key, 'enableRateLimit': True})
-        _b_l = self.get_balance_code_list()
-        self.q_l = self.get_rank_symbols()
-        save_file(FILE_URL_SYMB_3M, self.q_l)
-        self.r_l = list(set(_b_l).difference(self.q_l))
-        self.b_l = list(set(self.q_l + _b_l))
+        self.bnc = ccxt.binance(config={'apiKey': self.access_key, 'secret': self.secret_key, 'enableRateLimit': True})
+        
+        self.q_l = self.get_filter_ticker()
+        prc_ttl, prc_lmt, _, bal_lst  = self.get_balance_info()
+        self.b_l = list(set(self.q_l + bal_lst))
+        self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
+        self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - self.const_up
+        prc_max = self.prc_ttl / len(self.q_l)
+        self.prc_max = prc_max if prc_max > self.const_dn else self.const_dn
 
-        _ttl_evl_prc, _buy_max_lmt = self.get_total_price()
-        self.tot_evl_price = _ttl_evl_prc if _ttl_evl_prc < 300000 else 300000
-        self.buy_max_lmt = _buy_max_lmt if _ttl_evl_prc < 300000 else _buy_max_lmt - 300000
-        _buy_max_prc = self.tot_evl_price / len(self.q_l)
-        self.buy_max_price = _buy_max_prc if _buy_max_prc > 10 else 10
-
-        line_message(f'BotBinance \n평가금액 : {self.tot_evl_price} USDT \n종목 : {len(self.b_l)}')
+        line_message(f'BotBinance \nTotal Price : {self.prc_ttl} USDT \nSymbol List : {len(self.b_l)}')
 
         __tn = datetime.datetime.now()
         tn_diff = (__tn - _tn).seconds
 
-        self.time_rebalance = threading.Timer(1800 - tn_diff - _tn_micro, self.init_per_day)
+        self.time_rebalance = threading.Timer(1800 - tn_diff - _tn_ms, self.init_per_day)
         self.time_rebalance.start()
-        
-    
-    def get_total_price(self):
-        res = self.pb.fetch_balance()
-        res_ttl = res['total']
-        res_bal = res['info']['balances']
-        price_fre = res['USDT']['free']
-        price_ttl = 0
-        for rb in res_bal:
-            if float(rb['free']) > 0 and rb['asset'] != 'USDT':
-                current_price = self.pb.fetch_ticker(rb['asset'] + '/USDT')['close']
-                price_ttl = price_ttl + current_price * res_ttl[rb['asset']]
-        price_ttl = price_ttl + price_fre
 
-        return float(price_ttl), float(price_fre)
-    
 
-    def get_rank_symbols(self):
-        mks = self.pb.load_markets()
-        symbols = []
+    # Spot, USDT Filter Ticker
+    def get_filter_ticker(self):
+        mks = self.bnc.load_markets()
+        lst = []
         for mk in mks:
             if \
             mk.endswith('/USDT') and \
             mks[mk]['info']['status'] == 'TRADING' and \
-            mks[mk]['info']['isMarginTradingAllowed'] == False and \
             mks[mk]['info']['isSpotTradingAllowed'] == True and \
+            mks[mk]['info']['isMarginTradingAllowed'] == False and \
             'SPOT' in mks[mk]['info']['permissions'] and \
             not ('MARGIN' in mks[mk]['info']['permissions']) \
             :
-                symbols.append(mk)
+                lst.append(mk)
 
-        return symbols
+        return lst
     
 
-    def get_balance_code_list(self, obj=False):
-        bal_lst = self.pb.fetch_balance()['info']['balances']
-        o = {}
-        l = [b['asset'] + '/USDT' for b in bal_lst if ((b['asset'] != 'USDT') and (float(b['free']) > 0))]
-        for b in bal_lst:
-            if float(b['free']) > 0:
-                o[b['asset'] + '/USDT'] = {
-                    'b': float(b['free']),
-                }
-        return o if obj else l
+    # Generate Neck Dataframe
+    def gen_neck_df(self, df):
+
+        df['close_prev'] = df['close'].shift()
+        df['ma05'] = df['close'].rolling(5).mean()
+        df['ma20'] = df['close'].rolling(20).mean()
+        df['ma60'] = df['close'].rolling(60).mean()
+        df['ma05_prev'] = df['ma05'].shift()
+        df['ma20_prev'] = df['ma20'].shift()
+        df['ma60_prev'] = df['ma60'].shift()
+        height_5_20_max = df['high'].rolling(20).max()
+        height_5_20_min = df['low'].rolling(20).min()
+        df['height_5_20'] = (((height_5_20_max / height_5_20_min) - 1) * 100).shift(5)
+
+        return df
     
 
-    def gen_bnc_df(self, tk, timeframe, limit):
-        ohlcv = self.pb.fetch_ohlcv(tk, timeframe=timeframe, limit=limit)
-        if len(ohlcv) >= 80:
+    # Generate Dataframe
+    def gen_bnc_df(self, tk, tf, lm):
+        ohlcv = self.bnc.fetch_ohlcv(tk, timeframe=tf, limit=lm)
+        if not (ohlcv is None) and len(ohlcv) >= lm:
             df = pd.DataFrame(ohlcv, columns=['datetime', 'open', 'high', 'low', 'close', 'volume'])
             pd_ts = pd.to_datetime(df['datetime'], utc=True, unit='ms')
             pd_ts = pd_ts.dt.tz_convert("Asia/Seoul")
             pd_ts = pd_ts.dt.tz_localize(None)
             df.set_index(pd_ts, inplace=True)
             df = df[['open', 'high', 'low', 'close', 'volume']]
-            return df
-    
 
+            return self.gen_neck_df(df)
+        
+
+    # Balance Code List
+    def get_balance_info(self):
+        balance = self.bnc.fetch_balance()
+        bal_ttl = balance['total']
+        bal_lst = balance['info']['balances']
+        bal_fre = float(balance['USDT']['free'])
+        prc = 0
+        obj = {}
+        lst = []
+        for bl in bal_lst:
+            free = float(bl['free'])
+            asst = bl['asset']
+            tikr = asst + '/USDT'
+            if free > 0 and asst != 'USDT':
+                obj[tikr] = {
+                    'b': free,
+                }
+                cls = self.bnc.fetch_ticker(tikr)['close']
+                prc = prc + (cls * bal_ttl[asst])
+                lst.append(tikr)
+        prc = prc + bal_fre
+
+        return prc, bal_fre, obj, lst
+    
+    
+    # Not Signed Cancel Order
     def get_remain_cancel(self, l):
         for _l in l:
-            rmn_lst = self.pb.fetch_open_orders(_l)
+            rmn_lst = self.bnc.fetch_open_orders(_l)
             print(rmn_lst)
             if len(rmn_lst) > 0:
                 for rmn in rmn_lst:
                     if rmn['info']['status'] == 'NEW':
-                        self.pb.cancel_order(rmn['info']['orderId'], _l)
-                        # if rmn['info']['side'] == 'sell' and res['info']['status'] == 'CANCELED':
-                        #     self.pb.create_market_sell_order(_l, float(rmn['info']['origQty']))
+                        self.bnc.cancel_order(rmn['info']['orderId'], _l)
+        
+
+
+
+
+
+
+
+
+
+
+
+    
+    # def get_total_price(self):
+    #     res = self.bnc.fetch_balance()
+    #     res_ttl = res['total']
+    #     res_bal = res['info']['balances']
+    #     price_fre = res['USDT']['free']
+    #     price_ttl = 0
+    #     for rb in res_bal:
+    #         if float(rb['free']) > 0 and rb['asset'] != 'USDT':
+    #             current_price = self.bnc.fetch_ticker(rb['asset'] + '/USDT')['close']
+    #             price_ttl = price_ttl + current_price * res_ttl[rb['asset']]
+    #     price_ttl = price_ttl + price_fre
+
+    #     return float(price_ttl), float(price_fre)
+    
+
+    # def get_rank_symbols(self):
+    #     mks = self.bnc.load_markets()
+    #     symbols = []
+    #     for mk in mks:
+    #         if \
+    #         mk.endswith('/USDT') and \
+    #         mks[mk]['info']['status'] == 'TRADING' and \
+    #         mks[mk]['info']['isMarginTradingAllowed'] == False and \
+    #         mks[mk]['info']['isSpotTradingAllowed'] == True and \
+    #         'SPOT' in mks[mk]['info']['permissions'] and \
+    #         not ('MARGIN' in mks[mk]['info']['permissions']) \
+    #         :
+    #             symbols.append(mk)
+
+    #     return symbols
+    
+
+    # def get_balance_code_list(self, obj=False):
+    #     bal_lst = self.bnc.fetch_balance()['info']['balances']
+    #     o = {}
+    #     l = [b['asset'] + '/USDT' for b in bal_lst if ((b['asset'] != 'USDT') and (float(b['free']) > 0))]
+    #     for b in bal_lst:
+    #         if float(b['free']) > 0:
+    #             o[b['asset'] + '/USDT'] = {
+    #                 'b': float(b['free']),
+    #             }
+    #     return o if obj else l
 
 
     def stock_order(self):
@@ -152,8 +224,7 @@ class BotCoin():
 
         # self.get_remain_cancel(self.b_l)
 
-        bal_lst = self.get_balance_code_list(True)
-        print(bal_lst)
+        _, _, bal_lst, _ = self.get_balance_info()
         sel_lst = []
 
         if os.path.isfile(FILE_URL_BLNC_3M):
@@ -162,17 +233,14 @@ class BotCoin():
             obj_lst = {}
             save_file(FILE_URL_BLNC_3M, obj_lst)
 
-        i = 1
         for symbol in self.b_l:
 
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
             is_symbol_obj = symbol in obj_lst
-            is_posble_ord = (self.buy_max_lmt > self.buy_max_price)
-            is_remain_sym = symbol in self.r_l
+            is_posble_ord = (self.prc_lmt > self.prc_max)
 
-            _df = self.gen_bnc_df(symbol, '30m', 80)
-            df = gen_neck_df(_df)
+            df = self.gen_neck_df(self.gen_bnc_df(symbol, '30m', 80))
 
             if not (df is None):
                 
@@ -185,7 +253,7 @@ class BotCoin():
                 m60_val = df_head['ma60'].iloc[-1]
 
                 cur_prc = float(cls_val)
-                cur_bal = self.buy_max_price / cur_prc
+                cur_bal = self.prc_max / cur_prc
 
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
@@ -195,7 +263,7 @@ class BotCoin():
                     obj_lst.pop(symbol, None)
                     print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
-                if (not is_remain_sym) and is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= 10))):
+                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
                     if \
                     (1.1 < hgt_val < 15) and \
@@ -203,8 +271,8 @@ class BotCoin():
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
                         
-                        self.pb.create_market_buy_order(symbol=symbol, amount=cur_bal)
-                        # res = self.pb.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': True})
+                        self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                        # res = self.bnc.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': True})
                         # print(res)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
@@ -221,7 +289,7 @@ class BotCoin():
                     if obj_lst[symbol]['x'] < cur_prc:
                         obj_lst[symbol]['x'] = cur_prc
 
-                        print(f'{symbol} : 현재가 {cur_prc}, Increase !!!')
+                        print(f'{symbol} : Current Price {cur_prc}, Increase !!!')
 
                     if obj_lst[symbol]['x'] > cur_prc:
                         
@@ -237,11 +305,11 @@ class BotCoin():
                         ord_rto_02 = (3.5/8)
                         ord_qty_01 = bal_qty * ord_rto_01
                         ord_qty_02 = bal_qty * ord_rto_02
-                        psb_ord_00 = cur_prc * bal_qty > 10
-                        psd_ord_01 = cur_prc * ord_qty_01 > 10
-                        psb_ord_02 = cur_prc * ord_qty_02 > 10
+                        psb_ord_00 = cur_prc * bal_qty > self.const_dn
+                        psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
+                        psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        print(f'{symbol} : 최고가 {obj_max}, 최고수익 {round(obj_pft, 4)}, 현재가 {cur_prc}, 현재수익 {round(bal_pft, 4)}')
+                        print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
 
                         if 1 < bal_pft < hp:
 
@@ -256,8 +324,8 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_01_end = True
 
-                                self.pb.create_market_sell_order(symbol=symbol, amount=qty)
-                                # res = self.pb.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
+                                # res = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(res)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
@@ -277,8 +345,8 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_02_end = True
 
-                                self.pb.create_market_sell_order(symbol=symbol, amount=qty)
-                                # res = self.pb.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
+                                # res = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(res)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
@@ -291,8 +359,8 @@ class BotCoin():
 
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
-                                self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
-                                # res = self.pb.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': True})
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=bal_qty)
+                                # res = self.bnc.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': True})
                                 # print(res)
                                 _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
@@ -304,8 +372,8 @@ class BotCoin():
 
                         elif (hp <= bal_pft) and psb_ord_00:
 
-                            self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
-                            # res = self.pb.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': True})
+                            self.bnc.create_market_sell_order(symbol=symbol, amount=bal_qty)
+                            # res = self.bnc.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': True})
                             # print(res)
                             _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
@@ -314,17 +382,13 @@ class BotCoin():
 
                         elif (bal_pft <= ct) and psb_ord_00:
 
-                            self.pb.create_market_sell_order(symbol=symbol, amount=bal_qty)
-                            # res = self.pb.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': True})
+                            self.bnc.create_market_sell_order(symbol=symbol, amount=bal_qty)
+                            # res = self.bnc.create_order(symbol, 'market', 'sell', bal_qty, None, {'test': True})
                             # print(res)
                             _ror = ror(obj_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
-
-            if i % 8 == 0:
-                time.sleep(0.4)
-            i = i + 1
 
         save_file(FILE_URL_BLNC_3M, obj_lst)
 
@@ -334,9 +398,11 @@ class BotCoin():
 
         __tn = datetime.datetime.now()
         __tn_div = __tn.minute % 30
+
         self.time_backtest = threading.Timer(1800 - (60 * __tn_div) - __tn.second, self.stock_order)
         self.time_backtest.start()
-        line_message(f'BotBinance \n시작 : {_tn}, \n금액 : {float(self.tot_evl_price)} USDT, \n종료 : {__tn}, {sel_txt}')
+
+        line_message(f'BotBinance \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} USDT, {sel_txt}')
 
 
 if __name__ == '__main__':
@@ -350,9 +416,9 @@ if __name__ == '__main__':
         try:
 
             tn = datetime.datetime.now()
-            tn_085825 = tn.replace(hour=9, minute=14, second=30)
+            tn_start = tn.replace(hour=9, minute=14, second=30)
 
-            if tn >= tn_085825 and bc.bool_start == False:
+            if tn >= tn_start and bc.bool_start == False:
                 bc.init_per_day()
                 bc.stock_order()
                 bc.bool_start = True
