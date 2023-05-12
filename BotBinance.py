@@ -36,8 +36,11 @@ class BotCoin():
         self.prc_lmt = 0
         self.prc_max = 0
 
-        self.const_up = 375000
+        self.const_up = 377500
         self.const_dn = 10
+
+        self.prc_buy_min = 75
+        self.prc_buy_max = 3775
 
     
     def init_per_day(self):
