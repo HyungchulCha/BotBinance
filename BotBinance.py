@@ -286,7 +286,7 @@ class BotCoin():
                         sel_cnt = copy.deepcopy(obj_lst[symbol]['s'])
 
                         ord_rto_01 = 0.2
-                        ord_rto_02 = (3.5/8)
+                        ord_rto_02 = (3/8)
                         ord_qty_01 = bal_qty * ord_rto_01
                         ord_qty_02 = bal_qty * ord_rto_02
                         psb_ord_00 = cur_prc * bal_qty > self.const_dn
