@@ -342,7 +342,7 @@ class BotCoin():
                                 pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
                                 self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
 
-                                if bool_01_end:
+                                if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
                                     # self.p_l
