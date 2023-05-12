@@ -185,6 +185,8 @@ class BotCoin():
             self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
             self.p_l[symbol]['sum_pft'] = 0
 
+            print(symbol, self.p_l[symbol]['ttl_pft'])
+
 
     def stock_order(self):
 
@@ -260,7 +262,6 @@ class BotCoin():
                     :
                         
                         resp = self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
-                        print(resp)
                         # res = self.bnc.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': True})
                         # print(res)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
@@ -268,7 +269,7 @@ class BotCoin():
 
                         # self.p_l
                         self.p_l[symbol]['sum_pft'] = 0
-                        self.p_l[symbol]['fst_qty'] = cur_bal
+                        self.p_l[symbol]['fst_qty'] = float(resp['info']['fills'][0]['qty']) - float(resp['info']['fills'][0]['commission'])
 
                         sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})                    
 
@@ -323,8 +324,7 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_01_end = True
 
-                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                print(resp)
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
                                 # res = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(res)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
