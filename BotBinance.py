@@ -169,6 +169,19 @@ class BotCoin():
                     if rmn['status'] == 'open':
                         self.bnc.cancel_order(rmn['info']['orderId'], _l)
 
+    
+    # Set Profit List
+    def set_profit_list(self, symbol, qty, _ror, end=False):
+        pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+        pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
+        self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
+
+        if end:
+            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
+            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
+            self.p_l[symbol]['sum_pft'] = 0
+
 
     def stock_order(self):
 
@@ -305,19 +318,10 @@ class BotCoin():
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
-                                # self.p_l
-                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                                pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
-                                self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
-
                                 if bool_01_end:
                                     obj_lst.pop(symbol, None)
 
-                                    # self.p_l
-                                    pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
-                                    pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                                    self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
-                                    self.p_l[symbol]['sum_pft'] = 0
+                                self.set_profit_list(symbol, qty, _ror, bool_01_end)
                             
                             elif (sel_cnt == 2) and (t2 <= los_dif) and psb_ord_00:
 
@@ -337,19 +341,10 @@ class BotCoin():
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
-                                # self.p_l
-                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                                pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
-                                self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
-
                                 if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
-                                    # self.p_l
-                                    pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
-                                    pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                                    self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
-                                    self.p_l[symbol]['sum_pft'] = 0
+                                self.set_profit_list(symbol, qty, _ror, bool_02_end)
 
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
@@ -361,17 +356,9 @@ class BotCoin():
                                 sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
-
                                 obj_lst.pop(symbol, None)
 
-                                # self.p_l
-                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                                pft_cur = (bal_qty / self.p_l[symbol]['fst_qty']) * _ror
-                                self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
-                                pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
-                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                                self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
-                                self.p_l[symbol]['sum_pft'] = 0
+                                self.set_profit_list(symbol, bal_qty, _ror, True)
 
                         elif (hp <= bal_pft) and psb_ord_00:
 
@@ -383,14 +370,7 @@ class BotCoin():
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
-                            # self.p_l
-                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                            pft_cur = (bal_qty / self.p_l[symbol]['fst_qty']) * _ror
-                            self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
-                            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
-                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
-                            self.p_l[symbol]['sum_pft'] = 0
+                            self.set_profit_list(symbol, bal_qty, _ror, True)
 
                         elif (bal_pft <= ct) and psb_ord_00:
 
@@ -402,14 +382,7 @@ class BotCoin():
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
-                            # self.p_l
-                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                            pft_cur = (bal_qty / self.p_l[symbol]['fst_qty']) * _ror
-                            self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
-                            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
-                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-                            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
-                            self.p_l[symbol]['sum_pft'] = 0
+                            self.set_profit_list(symbol, bal_qty, _ror, True)
 
         # self.p_l
         save_file(FILE_URL_BLNC_3M, obj_lst)
