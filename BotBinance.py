@@ -22,6 +22,8 @@ class BotCoin():
         
         self.q_l = []
         self.b_l = []
+        self.o_l = {}
+        self.p_l = {}
 
         self.time_order = None
         self.time_rebalance = None
@@ -59,6 +61,17 @@ class BotCoin():
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - self.const_up
         prc_max = self.prc_ttl / len(self.q_l)
         self.prc_max = prc_max if prc_max > self.const_dn else self.const_dn
+
+        # self.p_l
+        if os.path.isfile(FILE_URL_PRFT_3M):
+            self.p_l = load_file(FILE_URL_PRFT_3M)
+        else:
+            self.p_l = {}
+            save_file(FILE_URL_PRFT_3M, self.p_l)
+
+        for mk in self.b_l:
+            if not (mk in self.p_l):
+                self.p_l[mk] = {'ttl_pft': 1, 'sum_pft': 0, 'fst_qty': 0}
 
         line_message(f'BotBinance \nTotal Price : {self.prc_ttl} USDT \nSymbol List : {len(self.b_l)}')
 
@@ -200,6 +213,11 @@ class BotCoin():
                 cur_prc = float(cls_val)
                 cur_bal = self.prc_max / cur_prc
 
+                # self.p_l
+                prc_buy = self.p_l[symbol]['ttl_pft'] * self.prc_buy_min
+                prc_buy = self.prc_buy_max if (prc_buy > self.prc_buy_max) else self.prc_buy_min if (prc_buy < self.prc_buy_min) else prc_buy
+                cur_bal = prc_buy / cur_prc
+
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
@@ -222,6 +240,10 @@ class BotCoin():
                         # print(res)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+
+                        # self.p_l
+                        self.p_l['fst_qty'] = cur_bal
+
                         sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})                    
 
                 if is_symbol_bal and is_notnul_obj:
@@ -280,8 +302,19 @@ class BotCoin():
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
+                                # self.p_l
+                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                                pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
+                                self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
+
                                 if bool_01_end:
                                     obj_lst.pop(symbol, None)
+
+                                    # self.p_l
+                                    pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
+                                    pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                                    self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
+                                    self.p_l[symbol]['sum_pft'] = 0
                             
                             elif (sel_cnt == 2) and (t2 <= los_dif) and psb_ord_00:
 
@@ -301,8 +334,19 @@ class BotCoin():
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
-                                if bool_02_end:
+                                # self.p_l
+                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                                pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
+                                self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
+
+                                if bool_01_end:
                                     obj_lst.pop(symbol, None)
+
+                                    # self.p_l
+                                    pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
+                                    pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                                    self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
+                                    self.p_l[symbol]['sum_pft'] = 0
 
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
@@ -317,6 +361,15 @@ class BotCoin():
 
                                 obj_lst.pop(symbol, None)
 
+                                # self.p_l
+                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                                pft_cur = (bal_qty / self.p_l[symbol]['fst_qty']) * _ror
+                                self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
+                                pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
+                                pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                                self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
+                                self.p_l[symbol]['sum_pft'] = 0
+
                         elif (hp <= bal_pft) and psb_ord_00:
 
                             self.bnc.create_market_sell_order(symbol=symbol, amount=bal_qty)
@@ -326,6 +379,15 @@ class BotCoin():
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
+
+                            # self.p_l
+                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                            pft_cur = (bal_qty / self.p_l[symbol]['fst_qty']) * _ror
+                            self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
+                            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
+                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
+                            self.p_l[symbol]['sum_pft'] = 0
 
                         elif (bal_pft <= ct) and psb_ord_00:
 
@@ -337,7 +399,20 @@ class BotCoin():
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
+                            # self.p_l
+                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                            pft_cur = (bal_qty / self.p_l[symbol]['fst_qty']) * _ror
+                            self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
+                            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
+                            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+                            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
+                            self.p_l[symbol]['sum_pft'] = 0
+
+        # self.p_l
         save_file(FILE_URL_BLNC_3M, obj_lst)
+        save_file(FILE_URL_PRFT_3M, self.p_l)
+        print(obj_lst)
+        print(self.p_l)
 
         sel_txt = ''
         for sl in sel_lst:
