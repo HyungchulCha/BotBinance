@@ -51,15 +51,16 @@ class BotBinance():
             tn_d = int(((tn - tn_0).seconds) % 300)
             print(tn_d)
 
-            if tn_d <= 150:
-                time.sleep(300 - tn_d - 150)
-            else:
-                time.sleep(300 - tn_d + 150)
+            # if tn_d <= 150:
+            #     time.sleep(300 - tn_d - 150)
+            # else:
+            #     time.sleep(300 - tn_d + 150)
 
             self.bool_balance = True
 
-        _tn = datetime.datetime.now()
-        _tn_ms = _tn.microsecond / 1000000
+        # _tn = datetime.datetime.now()
+
+        print('##################################################')
 
         self.bnc = ccxt.binance(config={'apiKey': self.access_key, 'secret': self.secret_key, 'enableRateLimit': True})
         
@@ -82,9 +83,10 @@ class BotBinance():
         line_message(f'BotBinance \nTotal Price : {self.prc_ttl} USDT \nSymbol List : {len(self.b_l)}')
 
         __tn = datetime.datetime.now()
-        tn_diff = (__tn - _tn).seconds
+        __tn_min = __tn.minute % 5
+        __tn_sec = __tn.second
 
-        self.time_rebalance = threading.Timer(300 - tn_diff - _tn_ms, self.init_per_day)
+        self.time_rebalance = threading.Timer(300 - (60 * __tn_min) - __tn_sec + 150, self.init_per_day)
         self.time_rebalance.start()
 
 
@@ -99,9 +101,6 @@ class BotBinance():
             self.bool_order = True
 
         _tn = datetime.datetime.now()
-        _tn_ms = _tn.microsecond / 1000000
-
-        print('##################################################')
 
         # self.get_remain_cancel(self.b_l)
 
@@ -115,6 +114,9 @@ class BotBinance():
             save_file(FILE_URL_BLNC_3M, obj_lst)
 
         for symbol in self.b_l:
+
+            # if symbol == 'CHESS/USDT':
+            #     self.p_l['CHESS/USDT']['ttl_pft'] = 1.03
 
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
@@ -140,16 +142,16 @@ class BotBinance():
 
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                    print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
+                    # print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
                 
-                if (not is_symbol_bal) and is_symbol_obj:
+                if not is_symbol_bal and is_symbol_obj:
                     obj_lst.pop(symbol, None)
-                    print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
+                    # print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
                 if is_symbol_bal and ((self.p_l[symbol]['fst_qty'] == 0) or (cur_prc * bal_lst[symbol]['b'] <= self.const_dn)):
                     self.p_l[symbol]['fst_qty'] = copy.deepcopy(bal_lst[symbol]['b'])
                     self.p_l[symbol]['sum_pft'] = 0
-                    print(f'{symbol} : Insert Quantity, Pft[X], Bal[O] !!!')
+                    # print(f'{symbol} : Insert Quantity, Pft[X], Bal[O] !!!')
 
                 if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
@@ -160,10 +162,9 @@ class BotBinance():
                     :
                         
                         resp = self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
-                        print(resp)
+                        # print(resp)
                         # resp = self.bnc.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': True})
                         # print(resp)
-
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                         prv_qty = copy.deepcopy(self.p_l[symbol]['fst_qty'])
                         rel_qty = cur_bal - (cur_bal * 0.001) + prv_qty
@@ -200,7 +201,7 @@ class BotBinance():
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
+                        # print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
 
                         if 1 < bal_pft < hp:
 
@@ -216,7 +217,7 @@ class BotBinance():
                                     bool_01_end = True
 
                                 resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                print(resp)
+                                # print(resp)
                                 # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(resp)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
@@ -240,7 +241,7 @@ class BotBinance():
                                     bool_02_end = True
 
                                 resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                print(resp)
+                                # print(resp)
                                 # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(resp)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
@@ -257,7 +258,7 @@ class BotBinance():
                             elif (sel_cnt == 3) and (h3 <= bal_pft) and psb_ord_00:
 
                                 resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                                print(resp)
+                                # print(resp)
                                 # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
                                 # print(resp)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -272,7 +273,7 @@ class BotBinance():
                         elif (hp <= bal_pft) and psb_ord_00:
 
                             resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                            print(resp)
+                            # print(resp)
                             # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
                             # print(resp)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -298,7 +299,7 @@ class BotBinance():
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
+                        # print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
 
                         if 1 < bal_pft < hp:
 
@@ -314,7 +315,7 @@ class BotBinance():
                                     bool_01_end = True
 
                                 resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                print(resp)
+                                # print(resp)
                                 # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(resp)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
@@ -338,7 +339,7 @@ class BotBinance():
                                     bool_02_end = True
 
                                 resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                print(resp)
+                                # print(resp)
                                 # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
                                 # print(resp)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
@@ -355,7 +356,7 @@ class BotBinance():
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
                                 resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                                print(resp)
+                                # print(resp)
                                 # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
                                 # print(resp)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -370,7 +371,7 @@ class BotBinance():
                         elif (hp <= bal_pft) and psb_ord_00:
 
                             resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                            print(resp)
+                            # print(resp)
                             # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
                             # print(resp)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -383,7 +384,7 @@ class BotBinance():
                         elif (bal_pft <= ct) and psb_ord_00:
 
                             resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                            print(resp)
+                            # print(resp)
                             # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
                             # print(resp)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -395,16 +396,17 @@ class BotBinance():
 
         save_file(FILE_URL_BLNC_3M, obj_lst)
         save_file(FILE_URL_PRFT_3M, self.p_l)
-        print(self.p_l)
+        # print(self.p_l)
 
         sel_txt = ''
         for sl in sel_lst:
             sel_txt = sel_txt + '\n' + str(sl['c']) + ' : ' + str(sl['r'])
 
         __tn = datetime.datetime.now()
-        tn_diff = (__tn - _tn).seconds
+        __tn_min = __tn.minute % 5
+        __tn_sec = __tn.second
 
-        self.time_backtest = threading.Timer(300 - tn_diff - _tn_ms, self.stock_order)
+        self.time_backtest = threading.Timer(300 - (60 * __tn_min) - __tn_sec, self.stock_order)
         self.time_backtest.start()
 
         line_message(f'BotBinance \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} USDT, {sel_txt}')
@@ -512,7 +514,7 @@ class BotBinance():
             print(symbol, self.p_l[symbol]['ttl_pft'])
 
             if self.p_l[symbol]['ttl_pft'] > 2:
-                line_message(symbol)
+                line_message(symbol, pft_ttl, pft_sum)
 
     
     # All Sell
@@ -530,23 +532,23 @@ class BotBinance():
 if __name__ == '__main__':
 
     bb = BotBinance()
-    # bb.init_per_day()
+    bb.init_per_day()
     # bb.stock_order()
-    # bb.all_sell_order()
+    bb.all_sell_order()
 
-    while True:
+    # while True:
 
-        try:
+    #     try:
 
-            tn = datetime.datetime.now()
-            tn_start = tn.replace(hour=0, minute=0, second=0)
+    #         tn = datetime.datetime.now()
+    #         tn_start = tn.replace(hour=0, minute=0, second=0)
 
-            if tn >= tn_start and bb.bool_start == False:
-                bb.init_per_day()
-                bb.stock_order()
-                bb.bool_start = True
+    #         if tn >= tn_start and bb.bool_start == False:
+    #             bb.init_per_day()
+    #             bb.stock_order()
+    #             bb.bool_start = True
 
-        except Exception as e:
+    #     except Exception as e:
 
-            line_message(f"BotBinance Error : {e}")
-            break
+    #         line_message(f"BotBinance Error : {e}")
+    #         break
