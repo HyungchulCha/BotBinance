@@ -13,8 +13,6 @@ FILE_URL = DIRECTORY + '/Data'
 FILE_URL_BLNC_3M = FILE_URL + '/BalanceList_Coin.pickle'
 FILE_URL_SYMB_3M = FILE_URL + '/SymbolList_Coin.pickle'
 FILE_URL_PRFT_3M = FILE_URL + '/ProfitList_Coin.pickle'
-FILE_URL_BACK = DIRECTORY + '/BacktestResult'
-FILE_URL_BLNC_TEST_3M = FILE_URL_BACK + '/BalanceListTest_Coin.pickle'
 
 LINE_URL = 'https://notify-api.line.me/api/notify'
 LINE_TOKEN = '48zl8RmuB0lZoPOoVmqowZzjsUE0P53JO7jfVFCyLwh'
