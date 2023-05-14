@@ -123,10 +123,10 @@ class BotBinance():
 
                 if is_symbol_bal and (not is_symbol_obj):
 
-                    if (bal_lst[symbol]['b'] * cur_prc) < self.const_dn:
-                        obj_lst[symbol] = {'x': 1, 'a': 1, 'b': False, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                    if bal_lst[symbol]['b'] * cur_prc < self.const_dn:
+                        obj_lst[symbol] = {'x': 1, 'a': 1, 'b': False, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     else:
-                        obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 'b': True, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                        obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 'b': True, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     # print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
                 
                 if not is_symbol_bal and is_symbol_obj:
@@ -146,12 +146,15 @@ class BotBinance():
 
                         if is_symbol_obj and obj_lst[symbol]['b'] == True:
                             prv_qty = copy.deepcopy(bal_lst[symbol]['b'])
-                            prc_avg = copy.deepcopy(obj_lst[symbol]['a'])
-                            obj_lst[symbol]['a'] = (prc_avg + cur_prc)/2
+                            prv_cnt = copy.deepcopy(obj_lst[symbol]['c'])
+                            prv_avg = copy.deepcopy(obj_lst[symbol]['a'])
+                            
+                            obj_lst[symbol]['a'] = ((prv_avg * prv_cnt + cur_prc) / (prv_cnt + 1))
+                            obj_lst[symbol]['c'] = prv_cnt + 1
                             obj_lst[symbol]['s'] = 1
                             obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                         else:
-                            obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                            obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
 
                         print(f'Buy - Symbol: {symbol}, Balance: {prv_qty + cur_bal}')
                         sel_lst.append({'c': '[B] ' + symbol, 'r': (prv_qty + cur_bal)})   
@@ -159,14 +162,14 @@ class BotBinance():
 
                 if is_notnul_obj and is_symbol_bal:
                     
-                    ts1 = 0.035
-                    ts2 = 0.045
-                    ts3 = 0.055
-                    sl1 = 1.03
-                    sl2 = 1.045
-                    sl3 = 1.06
-                    tsm = 1.075
-                    ctl = 0.8 
+                    ts1 = 0.05
+                    ts2 = 0.075
+                    ts3 = 0.1
+                    sl1 = 1.015
+                    sl2 = 1.025
+                    sl3 = 1.035
+                    tsm = 1.045
+                    ctl = 0.8
 
                     if obj_lst[symbol]['x'] < cur_prc:
 
