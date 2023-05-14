@@ -10,6 +10,7 @@ import datetime
 import os
 import copy
 
+
 class BotBinance():
 
 
@@ -35,7 +36,7 @@ class BotBinance():
         self.prc_buy = 0
 
         self.const_up = 377500
-        self.const_dn = 15
+        self.const_dn = 12.5
 
     
     def init_per_day(self):
@@ -47,10 +48,10 @@ class BotBinance():
             tn_d = int(((tn - tn_0).seconds) % 300)
             print(tn_d)
 
-            if tn_d <= 150:
-                time.sleep(300 - tn_d - 150)
-            else:
-                time.sleep(300 - tn_d + 150)
+            # if tn_d <= 150:
+            #     time.sleep(300 - tn_d - 150)
+            # else:
+            #     time.sleep(300 - tn_d + 150)
 
             self.bool_balance = True
 
@@ -63,7 +64,7 @@ class BotBinance():
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - self.const_up
-        prc_buy = self.prc_ttl / len(self.q_l) * 10
+        prc_buy = self.prc_ttl / (len(self.q_l) * 10)
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         line_message(f'BotBinance \nTotal Price : {self.prc_ttl} USDT \nSymbol List : {len(self.b_l)}')
@@ -493,23 +494,23 @@ class BotBinance():
 if __name__ == '__main__':
 
     bb = BotBinance()
-    # bb.init_per_day()
+    bb.init_per_day()
     # bb.stock_order()
-    # bb.all_sell_order()
+    bb.all_sell_order()
 
-    while True:
+    # while True:
 
-        try:
+    #     try:
 
-            tn = datetime.datetime.now()
-            tn_start = tn.replace(hour=0, minute=0, second=0)
+    #         tn = datetime.datetime.now()
+    #         tn_start = tn.replace(hour=0, minute=0, second=0)
 
-            if tn >= tn_start and bb.bool_start == False:
-                bb.init_per_day()
-                bb.stock_order()
-                bb.bool_start = True
+    #         if tn >= tn_start and bb.bool_start == False:
+    #             bb.init_per_day()
+    #             bb.stock_order()
+    #             bb.bool_start = True
 
-        except Exception as e:
+    #     except Exception as e:
 
-            line_message(f"BotBinance Error : {e}")
-            break
+    #         line_message(f"BotBinance Error : {e}")
+    #         break
