@@ -64,7 +64,7 @@ class BotBinance():
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - (prc_ttl - self.const_up)
-        prc_buy = self.prc_ttl / (len(self.q_l) * 2)
+        prc_buy = self.prc_ttl / (len(self.q_l) * 1.5)
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         line_message(f'BotBinance \nTotal Price : {self.prc_ttl} USDT \nSymbol List : {len(self.b_l)}')
@@ -135,7 +135,7 @@ class BotBinance():
 
                 if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
-                    if macd_osc < 0 and macd_osc_diff < 0 and rsi < 30 and (volume_osc <= 5 or volume_osc >= 50):
+                    if (macd_osc < 0) and (macd_osc_diff < 0) and (rsi < 30) and (volume_osc >= 50):
                         
                         resp = self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
                         # print(resp)
