@@ -48,10 +48,10 @@ class BotBinance():
             tn_d = int(((tn - tn_0).seconds) % 300)
             print(tn_d)
 
-            # if tn_d <= 150:
-            #     time.sleep(300 - tn_d - 150)
-            # else:
-            #     time.sleep(300 - tn_d + 150)
+            if tn_d <= 150:
+                time.sleep(300 - tn_d - 150)
+            else:
+                time.sleep(300 - tn_d + 150)
 
             self.bool_balance = True
 
@@ -123,7 +123,7 @@ class BotBinance():
 
                 if is_symbol_bal and (not is_symbol_obj):
 
-                    if bal_lst[symbol]['b'] * cur_prc < self.const_dn:
+                    if (bal_lst[symbol]['b'] * cur_prc) < self.const_dn:
                         obj_lst[symbol] = {'x': 1, 'a': 1, 'b': False, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     else:
                         obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 'b': True, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
@@ -459,26 +459,6 @@ class BotBinance():
                         self.bnc.cancel_order(rmn['info']['orderId'], _l)
 
     
-    # Set Profit List
-    def set_profit_list(self, symbol, qty, _ror, end=False):
-        pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-        pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
-        self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
-
-        if end:
-            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
-            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-
-            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
-            self.p_l[symbol]['fst_qty'] = 0
-            self.p_l[symbol]['sum_pft'] = 0
-
-            print(symbol, self.p_l[symbol]['ttl_pft'])
-
-            if self.p_l[symbol]['ttl_pft'] > 2:
-                line_message(symbol, pft_ttl, pft_sum)
-
-    
     # All Sell
     def all_sell_order(self):
         _, _, bal_lst, _  = self.get_balance_info()
@@ -494,23 +474,23 @@ class BotBinance():
 if __name__ == '__main__':
 
     bb = BotBinance()
-    bb.init_per_day()
+    # bb.init_per_day()
     # bb.stock_order()
-    bb.all_sell_order()
+    # bb.all_sell_order()
 
-    # while True:
+    while True:
 
-    #     try:
+        try:
 
-    #         tn = datetime.datetime.now()
-    #         tn_start = tn.replace(hour=0, minute=0, second=0)
+            tn = datetime.datetime.now()
+            tn_start = tn.replace(hour=0, minute=0, second=0)
 
-    #         if tn >= tn_start and bb.bool_start == False:
-    #             bb.init_per_day()
-    #             bb.stock_order()
-    #             bb.bool_start = True
+            if tn >= tn_start and bb.bool_start == False:
+                bb.init_per_day()
+                bb.stock_order()
+                bb.bool_start = True
 
-    #     except Exception as e:
+        except Exception as e:
 
-    #         line_message(f"BotBinance Error : {e}")
-    #         break
+            line_message(f"BotBinance Error : {e}")
+            break
