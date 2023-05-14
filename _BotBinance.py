@@ -142,13 +142,17 @@ class BotBinance():
                         # resp = self.bnc.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': True})
                         # print(resp)
 
+                        prv_qty = 0
+
                         if is_symbol_obj and obj_lst[symbol]['b'] == True:
+                            prv_qty = copy.deepcopy(bal_lst[symbol]['b'])
                             prc_avg = copy.deepcopy(obj_lst[symbol]['a'])
-                            obj_lst[symbol] = {'x': (prc_avg + cur_prc)/2, 'a': (prc_avg + cur_prc)/2, 's': 1, 'b': True, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                            obj_lst[symbol]['a'] = (prc_avg + cur_prc)/2
+                            obj_lst[symbol]['s'] = 1
+                            obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                         else:
                             obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                            
-                        prv_qty = copy.deepcopy(bal_lst[symbol]['b'])
+
                         print(f'Buy - Symbol: {symbol}, Balance: {prv_qty + cur_bal}')
                         sel_lst.append({'c': '[B] ' + symbol, 'r': (prv_qty + cur_bal)})   
 
