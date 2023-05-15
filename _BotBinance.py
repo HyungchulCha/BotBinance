@@ -117,47 +117,63 @@ class BotBinance():
                 rsi = df_head['rsi'].iloc[-1]
                 volume_osc = df_head['volume_osc'].iloc[-1]
 
-                is_posble_ord = self.prc_lmt > self.prc_buy
                 cur_prc = float(close)
-                cur_bal = float(self.prc_buy / cur_prc)
+                is_psb_ord = self.prc_lmt > self.prc_buy
+                is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
+                is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
+
+                '''
+                잔고 O, DB X
+                1) 잔여수량 남은경우 - 매수 False
+                2) 수동구매 누른경우 - 매수 True
+                잔고 X, DB O
+                1) DB 제거
+                '''
 
                 if is_symbol_bal and (not is_symbol_obj):
-
                     if bal_lst[symbol]['b'] * cur_prc < self.const_dn:
                         obj_lst[symbol] = {'x': 1, 'a': 1, 'b': False, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     else:
                         obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 'b': True, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                    # print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
                 
                 if not is_symbol_bal and is_symbol_obj:
                     obj_lst.pop(symbol, None)
-                    # print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
-                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
+                '''
+                매수
+                - 구매가능 금액이 있고
+                - 잔고에 없거나, 잔고는 있는데 최소 금액보다 낮은 경우
+                - macd_osc < 0, macd_osc 감소하는 상태(macd_osc_diff < 0)
+                - rsi < 30
+                - volume_osc >= 50
+                - 이미 매수한 symbol 1.125배 추가매수
+                '''
 
-                    if (macd_osc < 0) and (macd_osc_diff < 0) and (rsi < 30) and (volume_osc >= 50):
-                        
-                        resp = self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
-                        # print(resp)
-                        # resp = self.bnc.create_order(symbol, 'market', 'buy', cur_bal, None, {'test': True})
-                        # print(resp)
+                if \
+                is_psb_ord and \
+                ((not is_symbol_bal) or is_psb_buy) and \
+                (macd_osc < 0) and \
+                (macd_osc_diff < 0) and \
+                (rsi < 30) and \
+                (volume_osc >= 50) \
+                :
 
-                        if is_symbol_obj and obj_lst[symbol]['b'] == True:
-                            prv_cnt = copy.deepcopy(obj_lst[symbol]['c'])
-                            prv_avg = copy.deepcopy(obj_lst[symbol]['a'])
-                            
-                            obj_lst[symbol]['a'] = ((prv_avg * prv_cnt + cur_prc) / (prv_cnt + 1))
-                            obj_lst[symbol]['c'] = prv_cnt + 1
-                            obj_lst[symbol]['s'] = 1
-                            obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
-                        else:
-                            obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-
-                        print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
-                        sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})   
+                    if is_symbol_obj and obj_lst[symbol]['b'] == True:
+                        cur_bal = float(self.prc_buy * 1.125 / cur_prc)
+                    else:
+                        cur_bal = float(self.prc_buy / cur_prc)
+                    
+                    self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                    obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                    print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
+                    sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})   
 
 
-                if is_notnul_obj and is_symbol_bal:
+                '''
+                매도
+                DB O, 잔고 O, 주문가능금액 이상
+                '''
+                if is_notnul_obj and is_psb_sel:
                     
                     ts1 = 0.05
                     ts2 = 0.075
@@ -185,11 +201,9 @@ class BotBinance():
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        # print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
+                        if (1 < bal_pft < tsm) and psb_ord_00:
 
-                        if 1 < bal_pft < tsm:
-
-                            if (sel_cnt == 1) and (sl1 <= bal_pft) and psb_ord_00:
+                            if (sel_cnt == 1) and (sl1 <= bal_pft):
                                 
                                 bool_01_end = False
                                 if psd_ord_01:
@@ -200,10 +214,7 @@ class BotBinance():
                                     qty = ord_qty_00
                                     bool_01_end = True
 
-                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                # print(resp)
-                                # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
-                                # print(resp)
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[SH1] ' + symbol, 'r': round(_ror, 4)})
@@ -213,7 +224,7 @@ class BotBinance():
                                 if bool_01_end:
                                     obj_lst.pop(symbol, None)
                             
-                            elif (sel_cnt == 2) and (sl2 <= bal_pft) and psb_ord_00:
+                            elif (sel_cnt == 2) and (sl2 <= bal_pft):
 
                                 bool_02_end = False
                                 if psb_ord_02:
@@ -222,10 +233,7 @@ class BotBinance():
                                     qty = ord_qty_00
                                     bool_02_end = True
 
-                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                # print(resp)
-                                # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
-                                # print(resp)
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[SH2] ' + symbol, 'r': round(_ror, 4)})
@@ -235,12 +243,9 @@ class BotBinance():
                                 if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
-                            elif (sel_cnt == 3) and (sl3 <= bal_pft) and psb_ord_00:
+                            elif (sel_cnt == 3) and (sl3 <= bal_pft):
 
-                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                                # print(resp)
-                                # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
-                                # print(resp)
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[SH3] ' + symbol, 'r': round(_ror, 4)})
@@ -248,12 +253,9 @@ class BotBinance():
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
 
-                        elif (tsm <= bal_pft) and psb_ord_00:
+                        elif (tsm <= bal_pft):
 
-                            resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                            # print(resp)
-                            # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
-                            # print(resp)
+                            self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
@@ -276,11 +278,9 @@ class BotBinance():
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        # print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
+                        if (1 < bal_pft < tsm) and psb_ord_00:
 
-                        if 1 < bal_pft < tsm:
-
-                            if (sel_cnt == 1) and (ts1 <= los_dif) and psb_ord_00:
+                            if (sel_cnt == 1) and (ts1 <= los_dif):
                                 
                                 bool_01_end = False
                                 if psd_ord_01:
@@ -291,10 +291,7 @@ class BotBinance():
                                     qty = ord_qty_00
                                     bool_01_end = True
 
-                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                # print(resp)
-                                # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
-                                # print(resp)
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[ST1] ' + symbol, 'r': round(_ror, 4)})
@@ -304,7 +301,7 @@ class BotBinance():
                                 if bool_01_end:
                                     obj_lst.pop(symbol, None)
                             
-                            elif (sel_cnt == 2) and (ts2 <= los_dif) and psb_ord_00:
+                            elif (sel_cnt == 2) and (ts2 <= los_dif):
 
                                 bool_02_end = False
                                 if psb_ord_02:
@@ -313,10 +310,7 @@ class BotBinance():
                                     qty = ord_qty_00
                                     bool_02_end = True
 
-                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
-                                # print(resp)
-                                # resp = self.bnc.create_order(symbol, 'market', 'sell', qty, None, {'test': True})
-                                # print(resp)
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[ST2] ' + symbol, 'r': round(_ror, 4)})
@@ -326,12 +320,9 @@ class BotBinance():
                                 if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
-                            elif (sel_cnt == 3) and (ts3 <= los_dif) and psb_ord_00:
+                            elif (sel_cnt == 3) and (ts3 <= los_dif):
 
-                                resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                                # print(resp)
-                                # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
-                                # print(resp)
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[ST3] ' + symbol, 'r': round(_ror, 4)})
@@ -339,30 +330,25 @@ class BotBinance():
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
 
-                        elif (tsm <= bal_pft) and psb_ord_00:
+                        elif (tsm <= bal_pft):
 
-                            resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                            # print(resp)
-                            # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
-                            # print(resp)
+                            self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
-                        elif (bal_pft <= ctl) and psb_ord_00:
+                        elif (bal_pft <= ctl):
 
-                            resp = self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
-                            # print(resp)
-                            # resp = self.bnc.create_order(symbol, 'market', 'sell', ord_qty_00, None, {'test': True})
-                            # print(resp)
+                            self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
+
         save_file(FILE_URL_BLNC_3M, obj_lst)
-        # print(self.p_l)
+        print(obj_lst)
 
         sel_txt = ''
         for sl in sel_lst:
