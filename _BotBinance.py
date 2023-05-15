@@ -68,7 +68,7 @@ class BotBinance():
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         if self.prc_lmt < self.prc_buy:
-            line_message('Insufficient Balance !!!')
+            line_message('BotBinance Insufficient Balance !!!')
 
         int_prc_ttl = int(self.prc_ttl)
         int_prc_lmt = int(self.prc_lmt)
