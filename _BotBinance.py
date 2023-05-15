@@ -125,6 +125,7 @@ class BotBinance():
                 volume_osc = df_head['volume_osc'].iloc[-1]
 
                 cur_prc = float(close)
+                cur_bal = float(self.prc_buy / cur_prc)
                 is_psb_ord = self.prc_lmt > self.prc_buy
                 is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
                 is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
@@ -163,11 +164,6 @@ class BotBinance():
                 (rsi < 30) and \
                 (volume_osc >= 50) \
                 :
-
-                    if is_symbol_obj and obj_lst[symbol]['b'] == True:
-                        cur_bal = float(self.prc_buy * 1.125 / cur_prc)
-                    else:
-                        cur_bal = float(self.prc_buy / cur_prc)
                     
                     self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
                     obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
