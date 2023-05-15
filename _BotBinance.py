@@ -71,9 +71,10 @@ class BotBinance():
             line_message('Insufficient Balance !!!')
 
         int_prc_ttl = int(self.prc_ttl)
+        int_prc_lmt = int(self.prc_lmt)
         len_bal_lst = len(self.b_l)
 
-        line_message(f'BotBinance \nTotal Price : {int_prc_ttl:,} USDT \nSymbol List : {len_bal_lst}')
+        line_message(f'BotBinance \nTotal Price : {int_prc_ttl:,} USDT \nLimit Price : {int_prc_lmt:,} USDT \nSymbol List : {len_bal_lst}')
 
         __tn = datetime.datetime.now()
         __tn_min = __tn.minute % 5
