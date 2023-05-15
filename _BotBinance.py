@@ -67,7 +67,10 @@ class BotBinance():
         prc_buy = self.prc_ttl / ((len(self.q_l)) * 0.75)
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
-        line_message(f'BotBinance \nTotal Price : {self.prc_ttl} USDT \nSymbol List : {len(self.b_l)}')
+        int_prc_ttl = int(self.prc_ttl)
+        len_bal_lst = len(self.b_l)
+
+        line_message(f'BotBinance \nTotal Price : {int_prc_ttl:,} USDT \nSymbol List : {len_bal_lst}')
 
         __tn = datetime.datetime.now()
         __tn_min = __tn.minute % 5
@@ -358,7 +361,11 @@ class BotBinance():
         self.time_backtest = threading.Timer(300 - (60 * __tn_min) - __tn_sec, self.stock_order)
         self.time_backtest.start()
 
-        line_message(f'BotBinance \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} USDT, {sel_txt}')
+        int_prc_ttl = int(self.prc_ttl)
+        str_start = _tn.strftime('%Y.%m.%d %H:%M:%S')
+        str_end = __tn.strftime('%Y.%m.%d %H:%M:%S')
+
+        line_message(f'BotBinance \nStart : {str_start}, \nEnd : {str_end}, \nTotal Price : {int_prc_ttl:,} USDT {sel_txt}')
 
 
     # Spot, USDT Filter Ticker
