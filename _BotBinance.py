@@ -197,11 +197,10 @@ class BotBinance():
                         ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
                         ord_qty_01 = ord_qty_00 * 0.3
                         ord_qty_02 = ord_qty_00 * 0.5
-                        psb_ord_00 = cur_prc * ord_qty_00 > self.const_dn
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        if (1 < bal_pft < tsm) and psb_ord_00:
+                        if (1 < bal_pft < tsm):
 
                             if (sel_cnt == 1) and (sl1 <= bal_pft):
                                 
@@ -274,11 +273,10 @@ class BotBinance():
                         ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
                         ord_qty_01 = ord_qty_00 * 0.3
                         ord_qty_02 = ord_qty_00 * 0.5
-                        psb_ord_00 = cur_prc * ord_qty_00 > self.const_dn
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        if (1 < bal_pft < tsm) and psb_ord_00:
+                        if (1 < bal_pft < tsm):
 
                             if (sel_cnt == 1) and (ts1 <= los_dif):
                                 
