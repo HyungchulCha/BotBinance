@@ -160,7 +160,7 @@ class BotBinance():
                 (macd_osc < 0) and \
                 (macd_osc_diff < 0) and \
                 (rsi < 30) and \
-                (volume_osc >= 50) \
+                (volume_osc >= 40) \
                 :
                     
                     is_psb_ord = float(self.bnc.fetch_balance()['USDT']['free']) > self.prc_buy
@@ -180,13 +180,15 @@ class BotBinance():
                 '''
                 if is_notnul_obj and is_psb_sel:
                     
-                    ts1 = 0.05
-                    ts2 = 0.075
-                    ts3 = 0.1
-                    sl1 = 1.005
-                    sl2 = 1.02
-                    sl3 = 1.035
-                    tsm = 1.05
+                    ts1 = 0.025
+                    ts2 = 0.05
+                    ts3 = 0.075
+                    ts4 = 0.1
+                    sl1 = 0.005
+                    sl2 = 1.01
+                    sl3 = 1.02
+                    sl4 = 1.04
+                    tsm = 1.08
                     ctl = 0.8
 
                     if obj_lst[symbol]['x'] < cur_prc:
@@ -200,10 +202,12 @@ class BotBinance():
                         bal_pft = ror(obj_fst, cur_prc)
 
                         ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
-                        ord_qty_01 = ord_qty_00 * 0.3
-                        ord_qty_02 = ord_qty_00 * 0.5
+                        ord_qty_01 = ord_qty_00 * 0.25
+                        ord_qty_02 = ord_qty_00 * 0.333
+                        ord_qty_03 = ord_qty_00 * 0.5
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
+                        psb_ord_03 = cur_prc * ord_qty_03 > self.const_dn
 
                         if (1 < bal_pft < tsm):
 
@@ -214,6 +218,8 @@ class BotBinance():
                                     qty = ord_qty_01
                                 elif psb_ord_02:
                                     qty = ord_qty_02
+                                elif psb_ord_03:
+                                    qty = ord_qty_03
                                 else:
                                     qty = ord_qty_00
                                     bool_01_end = True
@@ -233,6 +239,8 @@ class BotBinance():
                                 bool_02_end = False
                                 if psb_ord_02:
                                     qty = ord_qty_02
+                                elif psb_ord_03:
+                                    qty = ord_qty_03
                                 else:
                                     qty = ord_qty_00
                                     bool_02_end = True
@@ -249,10 +257,29 @@ class BotBinance():
 
                             elif (sel_cnt == 3) and (sl3 <= bal_pft):
 
+                                bool_03_end = False
+                                if psb_ord_03:
+                                    qty = ord_qty_03
+                                else:
+                                    qty = ord_qty_00
+                                    bool_03_end = True
+
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
+                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[SH3] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+
+                                if bool_03_end:
+                                    obj_lst.pop(symbol, None)
+
+                            elif (sel_cnt == 4) and (sl4 <= bal_pft):
+
                                 self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[SH3] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[SH4] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
@@ -276,10 +303,12 @@ class BotBinance():
                         sel_cnt = copy.deepcopy(obj_lst[symbol]['s'])
 
                         ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
-                        ord_qty_01 = ord_qty_00 * 0.3
-                        ord_qty_02 = ord_qty_00 * 0.5
+                        ord_qty_01 = ord_qty_00 * 0.25
+                        ord_qty_02 = ord_qty_00 * 0.333
+                        ord_qty_03 = ord_qty_00 * 0.5
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
+                        psb_ord_03 = cur_prc * ord_qty_03 > self.const_dn
 
                         if (1 < bal_pft < tsm):
 
@@ -290,6 +319,8 @@ class BotBinance():
                                     qty = ord_qty_01
                                 elif psb_ord_02:
                                     qty = ord_qty_02
+                                elif psb_ord_03:
+                                    qty = ord_qty_03
                                 else:
                                     qty = ord_qty_00
                                     bool_01_end = True
@@ -309,6 +340,8 @@ class BotBinance():
                                 bool_02_end = False
                                 if psb_ord_02:
                                     qty = ord_qty_02
+                                elif psb_ord_03:
+                                    qty = ord_qty_03
                                 else:
                                     qty = ord_qty_00
                                     bool_02_end = True
@@ -325,10 +358,29 @@ class BotBinance():
 
                             elif (sel_cnt == 3) and (ts3 <= los_dif):
 
+                                bool_03_end = False
+                                if psb_ord_03:
+                                    qty = ord_qty_03
+                                else:
+                                    qty = ord_qty_00
+                                    bool_03_end = True
+
+                                self.bnc.create_market_sell_order(symbol=symbol, amount=qty)
+                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[ST3] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+
+                                if bool_03_end:
+                                    obj_lst.pop(symbol, None)
+
+                            elif (sel_cnt == 4) and (ts4 <= los_dif):
+
                                 self.bnc.create_market_sell_order(symbol=symbol, amount=ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[ST3] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[ST4] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
