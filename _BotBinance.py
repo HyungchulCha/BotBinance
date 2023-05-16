@@ -164,6 +164,7 @@ class BotBinance():
                 :
                     
                     is_psb_ord = float(self.bnc.fetch_balance()['USDT']['free']) > self.prc_buy
+                    print(is_psb_ord)
 
                     if is_psb_ord:
                     
