@@ -64,7 +64,7 @@ class BotBinance():
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - (prc_ttl - self.const_up)
-        prc_buy = self.prc_ttl / ((len(self.q_l)) * 0.6)
+        prc_buy = self.prc_ttl / (len(self.q_l) * 0.8)
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         if self.prc_lmt < self.prc_buy:
@@ -126,7 +126,7 @@ class BotBinance():
 
                 cur_prc = float(close)
                 cur_bal = float(self.prc_buy / cur_prc)
-                is_psb_ord = self.prc_lmt > self.prc_buy
+                is_psb_ord = float(self.bnc.fetch_balance()['USDT']['free']) > self.prc_buy
                 is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
                 is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
 
@@ -180,10 +180,10 @@ class BotBinance():
                     ts1 = 0.05
                     ts2 = 0.075
                     ts3 = 0.1
-                    sl1 = 1.015
-                    sl2 = 1.025
+                    sl1 = 1.005
+                    sl2 = 1.02
                     sl3 = 1.035
-                    tsm = 1.045
+                    tsm = 1.05
                     ctl = 0.8
 
                     if obj_lst[symbol]['x'] < cur_prc:
