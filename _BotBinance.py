@@ -64,7 +64,7 @@ class BotBinance():
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - (prc_ttl - self.const_up)
-        prc_buy = self.prc_ttl / len(self.q_l)
+        prc_buy = self.prc_ttl / (len(self.q_l) * 0.6)
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         if self.prc_lmt < self.prc_buy:
@@ -126,8 +126,6 @@ class BotBinance():
 
                 cur_prc = float(close)
                 cur_bal = float(self.prc_buy / cur_prc)
-                is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
-                is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
 
                 '''
                 잔고 O, DB X
@@ -164,9 +162,9 @@ class BotBinance():
                 :
                     
                     is_psb_ord = float(self.bnc.fetch_balance()['USDT']['free']) > self.prc_buy
-                    print(is_psb_ord)
+                    is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
 
-                    if is_psb_ord:
+                    if is_psb_ord and is_psb_buy:
                     
                         self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
                         obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
@@ -178,18 +176,21 @@ class BotBinance():
                 매도
                 DB O, 잔고 O, 주문가능금액 이상
                 '''
+                
+                is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
+
                 if is_notnul_obj and is_psb_sel:
                     
                     ts1 = 0.025
                     ts2 = 0.05
                     ts3 = 0.075
                     ts4 = 0.1
-                    sl1 = 0.01
+                    sl1 = 1.01
                     sl2 = 1.02
-                    sl3 = 1.04
-                    sl4 = 1.06
-                    tsm = 1.08
-                    ctl = 0.8
+                    sl3 = 1.03
+                    sl4 = 1.04
+                    tsm = 1.05
+                    ctl = 0.975
 
                     if obj_lst[symbol]['x'] < cur_prc:
 
