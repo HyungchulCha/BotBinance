@@ -126,7 +126,6 @@ class BotBinance():
 
                 cur_prc = float(close)
                 cur_bal = float(self.prc_buy / cur_prc)
-                is_psb_ord = float(self.bnc.fetch_balance()['USDT']['free']) > self.prc_buy
                 is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
                 is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
 
@@ -158,17 +157,20 @@ class BotBinance():
                 '''
 
                 if \
-                is_psb_ord and \
                 (macd_osc < 0) and \
                 (macd_osc_diff < 0) and \
                 (rsi < 30) and \
                 (volume_osc >= 50) \
                 :
                     
-                    self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
-                    obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                    print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
-                    sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})   
+                    is_psb_ord = float(self.bnc.fetch_balance()['USDT']['free']) > self.prc_buy
+
+                    if is_psb_ord:
+                    
+                        self.bnc.create_market_buy_order(symbol=symbol, amount=cur_bal)
+                        obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                        print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
+                        sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})   
 
 
                 '''
